@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>iproat Solutions</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simplex-noise@3.0.1/dist/esm/simplex-noise.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle, #1b2735, #090a0f);
+      font-family: 'Inter', sans-serif;
+    }
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      display: block;
+    }
+    #overlay {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8rem 1rem 4rem; /* Added top padding for spacing instead of mt-32 on body */
+      color: white;
+    }
+    .logo {
+      max-width: 180px;
+      margin-bottom: 2rem;
+      user-select: none;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1200px;
+      margin-bottom: 3rem;
+    }
+    .product-link {
+      background: rgba(255 255 255 / 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      color: white;
+      font-weight: 600;
+      font-size: 1.1rem;
+      box-shadow: 0 0 10px rgba(255 255 255 / 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 80px;
+    }
+    .product-link:hover {
+      background: rgba(255 255 255 / 0.25);
+      box-shadow: 0 0 20px rgba(255 255 255 / 0.5);
+      transform: translateY(-6px) scale(1.05);
+      color: #facc15; /* Tailwind yellow-400 */
+    }
+    #buttonContainer {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+    }
+    #toggleBtn {
+      background-color: rgba(255 255 255 / 0.15);
+      border: none;
+      padding: 0;
+      border-radius: 9999px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #toggleBtn:hover {
+      background-color: rgba(255 255 255 / 0.35);
+    }
+    .colorBtns {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      width: 200px;
+    }
+    .btn {
+      background-color: rgba(255 255 255 / 0.15);
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
+      width: 100%;
+      text-align: center;
+    }
+    .btn:hover {
+      background-color: rgba(255 255 255 / 0.35);
+    }
+  </style>
+    <style>
+    * {
+  margin: 0;
+}
+#c1 {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+  </style>
+  <style>
+    .product-link.clicked {
+      transform: scale(0.9);
+      transition: transform 0.1s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-6 lg:overflow-y-hidden overflow-y-auto">
+  <canvas id="bg-canvas"></canvas>
+  <div id="overlay">
+    <img src="image/iProAT Solutions.png" alt="Logo" class="logo" />
+    <div class="product-grid" id="productGrid">
+      <!-- 12 product links will be inserted here by JS -->
+    </div>
+  </div>
+
+  <div id="buttonContainer">
+    <button id="toggleBtn" aria-expanded="false" aria-controls="colorButtons" aria-label="Toggle Color Options">
+      <!-- Palette SVG icon -->
+     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+</svg>
+
+    </button>
+    <div class="colorBtns" id="colorButtons" role="region" aria-hidden="true">
+      <button class="btn" id="bgColorBtn">Change Background Color</button>
+     
+    </div>
+  </div>
+
+  <script type="module">
+    import { SimplexNoise } from 'https://cdn.jsdelivr.net/npm/simplex-noise@3.0.1/+esm';
+
+    const canvas = document.getElementById('bg-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0); // transparent background
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.z = 1500;
+
+    const simplex = new SimplexNoise();
+
+    let particleSystem;
+    let particleMaterial;
+    let positions;
+    let colors;
+    let geometry;
+
+    const particlesCount = 7000;
+
+    // Initial colors
+    let bgColors = [
+      'radial-gradient(circle, #1b2735, #090a0f)',
+      'radial-gradient(circle, #2c3e50, #000000)',
+      'radial-gradient(circle, #0f2027, #203a43, #2c5364)',
+      'radial-gradient(circle, #42275a, #734b6d)',
+      'radial-gradient(circle, #000428, #004e92)'
+    ];
+    let bgColorIndex = 0;
+
+    let particleHues = [0.6, 0.3, 0.1, 0.8, 0.0];
+    let particleHueIndex = 0;
+
+    function createParticles(hue) {
+      geometry = new THREE.BufferGeometry();
+      positions = [];
+      colors = [];
+
+      const color = new THREE.Color();
+
+      for (let i = 0; i < particlesCount; i++) {
+        const radius = 400 + Math.random() * 1000;
+        const theta = Math.random() * 2 * Math.PI;
+        const phi = Math.acos(2 * Math.random() - 1);
+
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.sin(phi) * Math.sin(theta);
+        const z = radius * Math.cos(phi);
+
+        positions.push(x, y, z);
+
+        color.setHSL((i / particlesCount + hue) % 1, 0.8, 0.5);
+        colors.push(color.r, color.g, color.b);
+      }
+
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      particleMaterial = new THREE.PointsMaterial({
+        size: 2,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+      });
+
+      if (particleSystem) {
+        scene.remove(particleSystem);
+        geometry.dispose();
+        particleMaterial.dispose();
+      }
+
+      particleSystem = new THREE.Points(geometry, particleMaterial);
+      scene.add(particleSystem);
+    }
+
+    createParticles(particleHues[particleHueIndex]);
+
+    let angle = 0;
+    const mouse = new THREE.Vector2(0, 0);
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      angle += 0.001;
+      camera.position.x = 1500 * Math.sin(angle);
+      camera.position.z = 1500 * Math.cos(angle);
+      camera.lookAt(scene.position);
+
+      // Default animation: rotate particle system without noise displacement
+      particleSystem.rotation.y += 0.0015;
+      particleSystem.rotation.x += mouse.y * 0.005;
+      particleSystem.rotation.z += mouse.x * 0.005;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('mousemove', (event) => {
+      mouse.x = (event.clientX / window.innerWidth - 0.5) * 2;
+      mouse.y = (event.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    // Toggle button for color options
+    const toggleBtn = document.getElementById('toggleBtn');
+    const colorButtons = document.getElementById('colorButtons');
+
+    toggleBtn.addEventListener('click', () => {
+      const isVisible = colorButtons.style.display === 'flex';
+      if (isVisible) {
+        colorButtons.style.display = 'none';
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        colorButtons.setAttribute('aria-hidden', 'true');
+      } else {
+        colorButtons.style.display = 'flex';
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        colorButtons.setAttribute('aria-hidden', 'false');
+      }
+    });
+
+    // Background color change button
+    const bgColorBtn = document.getElementById('bgColorBtn');
+    bgColorBtn.addEventListener('click', () => {
+      bgColorIndex = (bgColorIndex + 1) % bgColors.length;
+      document.body.style.background = bgColors[bgColorIndex];
+    });
+
+
+    // Product links data
+    const products = [
+      { name: 'Product 1', href: 'https://www.figma.com/proto/FiYyO8aR2KYjOUQK0eozuR/MIC?node-id=722-2732&t=Sc9ybBNpnP570hdt-0&scaling=min-zoom&content-scaling=fixed&page-id=662%3A1718&starting-point-node-id=663%3A5600' },
+      { name: 'Product 2', href: 'https://ogin-screen-bs6n-alphaproject.netlify.app' },
+      { name: 'Product 3', href: 'https://t-dashboard-9iz4-alphaproject.netlify.app/' },
+      { name: 'Product 4', href: 'product-4.html' },
+      { name: 'Product 5', href: 'product-5.html' },
+      { name: 'Product 6', href: 'product-6.html' },
+      { name: 'Product 7', href: 'product-7.html' },
+      { name: 'Product 8', href: 'product-8.html' },
+      { name: 'Product 9', href: 'product-9.html' },
+      { name: 'Product 10', href: 'product-10.html' },
+      { name: 'Product 11', href: 'product-11.html' },
+      { name: 'Product 12', href: 'product-12.html' },
+    ];
+
+    const productGrid = document.getElementById('productGrid');
+
+    function createProductLink(product) {
+      const a = document.createElement('a');
+      a.href = product.href;
+      a.className = 'product-link';
+      a.setAttribute('aria-label', product.name);
+      a.textContent = product.name;
+      return a;
+    }
+
+    products.forEach(product => {
+      productGrid.appendChild(createProductLink(product));
+    });
+
+    // Add click animation on product links
+    const productLinks = document.querySelectorAll('.product-link');
+    productLinks.forEach(link => {
+      link.addEventListener('mousedown', () => {
+        link.classList.add('clicked');
+      });
+      link.addEventListener('mouseup', () => {
+        link.classList.remove('clicked');
+      });
+      link.addEventListener('mouseleave', () => {
+        link.classList.remove('clicked');
+      });
+    });
+  </script>
+</body>
+</html>
